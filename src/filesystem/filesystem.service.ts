@@ -14,7 +14,7 @@ import axios from 'axios';
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
-  private server: Server;
+  server: Server;
 
   async onModuleInit() {
     this.server = new Server(
@@ -44,7 +44,10 @@ export class FilesystemService implements OnModuleInit {
   }
 
   async handleCall(request: any) {
-    console.log('handleCall received request:', JSON.stringify(request, null, 2));
+    console.log(
+      'handleCall received request:',
+      JSON.stringify(request, null, 2),
+    );
 
     if (!request || !request.params) {
       throw new Error('Invalid request format: missing params');
@@ -65,37 +68,92 @@ export class FilesystemService implements OnModuleInit {
     try {
       switch (name) {
         case 'read_file': {
-          const { filepath } = args;
-          const absolutePath = path.resolve(filepath);
-          const content = await fs.readFile(absolutePath, 'utf-8');
-          return { success: true, message: `File: ${filepath}\n\n${content}` };
+          try {
+            if (!args || typeof args.file_path !== 'string') {
+              throw new Error('Invalid or missing "filepath" argument');
+            }
+
+            const { file_path } = args;
+            const absolutePath = path.resolve(args.file_path);
+            const content = await fs.readFile(absolutePath, 'utf-8');
+
+            return {
+              success: true,
+              message: `File: ${file_path}\n \n content:${content}`,
+            };
+          } catch (error) {
+            return {
+              success: false,
+              message: `Error reading file: ${error.message}`,
+            };
+          }
         }
 
         case 'write_file': {
-          const { filepath, content } = args;
-          const absolutePath = path.resolve(filepath);
-          await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-          await fs.writeFile(absolutePath, content, 'utf-8');
-          return this.ok(`Successfully wrote to file: ${filepath}`);
+          try {
+            if (
+              !args ||
+              typeof args.file_path !== 'string' ||
+              typeof args.content !== 'string'
+            ) {
+              throw new Error(
+                'Invalid or missing "file_path" or "content" argument',
+              );
+            }
+
+            const { file_path, content: text } = args;
+            const absolutePath = path.resolve(file_path);
+
+            await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+            await fs.writeFile(absolutePath, text, 'utf-8');
+
+            return {
+              success: true,
+              message: `Successfully wrote to file: ${file_path}`,
+            };
+          } catch (error) {
+            return {
+              success: false,
+              message: `Error writing to file: ${error.message}`,
+            };
+          }
         }
 
         case 'list_files': {
-          const { directory, pattern } = args;
-          const absolutePath = path.resolve(directory);
-          const files = await glob(
-            pattern
-              ? path.join(absolutePath, pattern)
-              : path.join(absolutePath, '*'),
-            {
-              dot: true,
-              absolute: false,
-              cwd: absolutePath,
-            },
-          );
-          const fileList = files.map((file) =>
-            path.relative(absolutePath, path.join(absolutePath, file)),
-          );
-          return this.ok(`Files in ${directory}:\n${fileList.join('\n')}`);
+          try {
+            if (!args || typeof args.directory !== 'string') {
+              throw new Error('Invalid or missing "directory" argument');
+            }
+
+            const { directory, extension } = args;
+            const absolutePath = path.resolve(directory);
+            console.log(path.join(absolutePath, extension));
+            
+            const files = await glob(
+              extension
+                ? path.join(absolutePath, extension)
+                : path.join(absolutePath, '*'),
+              {
+                dot: true,
+                absolute: false,
+                cwd: absolutePath,
+              },
+            );
+            
+            const fileList = files.map((file) =>
+              path.relative(absolutePath, path.join(absolutePath, file)),
+            );
+
+            return {
+              success: true,
+              message: `Files in ${directory}:\n${fileList.join(',')}`,
+            };
+          } catch (error) {
+            return {
+              success: false,
+              message: `Error listing files: ${error.message}`,
+            };
+          }
         }
 
         case 'search_files': {
@@ -183,7 +241,7 @@ export class FilesystemService implements OnModuleInit {
 
       const promptTemplate = `
       You are a file system tool agent. Based on the user's prompt, determine which file system tool to use and its arguments.
-      Available tools: read_file, write_file, list_files, search_files, create_directory, file_stats
+      Available tools: read_file, write_file, list_files, search_files, create_directory, file_stats.
       
       Respond in this exact format:
       Tool: [tool_name]
