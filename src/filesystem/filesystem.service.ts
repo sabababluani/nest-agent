@@ -74,12 +74,12 @@ export class FilesystemService implements OnModuleInit {
             }
 
             const { file_path } = args;
-            const absolutePath = path.resolve(args.file_path);
+            const absolutePath = path.resolve(file_path);
             const content = await fs.readFile(absolutePath, 'utf-8');
 
             return {
               success: true,
-              message: `File: ${file_path}\n \n content:${content}`,
+              message: `content: ${content}`,
             };
           } catch (error) {
             return {
@@ -125,28 +125,26 @@ export class FilesystemService implements OnModuleInit {
               throw new Error('Invalid or missing "directory" argument');
             }
 
-            const { directory, extension } = args;
+            const { directory, pattern } = args;
             const absolutePath = path.resolve(directory);
-            console.log(path.join(absolutePath, extension));
-            
-            const files = await glob(
-              extension
-                ? path.join(absolutePath, extension)
-                : path.join(absolutePath, '*'),
-              {
-                dot: true,
-                absolute: false,
-                cwd: absolutePath,
-              },
-            );
-            
+
+            const globPattern = pattern || '*';
+
+            const files = await glob(globPattern, {
+              dot: true,
+              absolute: false,
+              cwd: absolutePath,
+              windowsPathsNoEscape: true,
+            });
+
             const fileList = files.map((file) =>
               path.relative(absolutePath, path.join(absolutePath, file)),
             );
 
             return {
               success: true,
-              message: `Files in ${directory}:\n${fileList.join(',')}`,
+              message: `Files: ${fileList.join(', ')}`,
+              files: files,
             };
           } catch (error) {
             return {
@@ -157,22 +155,42 @@ export class FilesystemService implements OnModuleInit {
         }
 
         case 'search_files': {
-          const { directory, pattern, recursive = true } = args;
-          const absolutePath = path.resolve(directory);
-          const searchPattern = recursive
-            ? path.join(absolutePath, '**', pattern)
-            : path.join(absolutePath, pattern);
-          const files = await glob(searchPattern, {
-            dot: true,
-            absolute: false,
-            cwd: absolutePath,
-          });
-          const fileList = files.map((file) =>
-            path.relative(absolutePath, path.join(absolutePath, file)),
-          );
-          return this.ok(
-            `Found ${files.length} files matching "${pattern}" in ${directory}:\n${fileList.join('\n')}`,
-          );
+          try {
+            if (
+              !args ||
+              typeof args.directory !== 'string' ||
+              typeof args.pattern !== 'string'
+            ) {
+              throw new Error(
+                'Invalid or missing "directory" or "pattern" argument',
+              );
+            }
+
+            const { directory, pattern, recursive = true } = args;
+            const absolutePath = path.resolve(directory);
+
+            const searchPattern = recursive ? `**/${pattern}` : pattern;
+
+            const files = await glob(searchPattern, {
+              dot: true,
+              absolute: false,
+              cwd: absolutePath,
+              windowsPathsNoEscape: true,
+            });
+
+            const fileList = files;
+
+            return {
+              success: true,
+              message: `Found ${files.length} files matching "${pattern}" in ${directory}:\n${fileList.join('\n')}`,
+              files: fileList,
+            };
+          } catch (error) {
+            return {
+              success: false,
+              message: `Error searching files: ${error.message}`,
+            };
+          }
         }
 
         case 'create_directory': {
