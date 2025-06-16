@@ -103,4 +103,23 @@ export const TOOLS: Tool[] = [
       required: ['filepath'],
     },
   },
+  {
+    name: 'show_wifi_password',
+    description: 'Show saved WiFi network passwords (requires appropriate permissions)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        networkName: {
+          type: 'string',
+          description: 'The name of the WiFi network to show password for (optional, if not provided shows all saved networks)',
+        },
+        showPassword: {
+          type: 'boolean',
+          description: 'Whether to show the actual password or just network information',
+          default: false,
+        }
+      },
+      required: [],
+    },
+  },
 ];

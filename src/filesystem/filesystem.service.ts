@@ -4,13 +4,16 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  TextContent,
 } from '@modelcontextprotocol/sdk/types.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
 import { TOOLS } from 'src/tools/file-tool';
 import axios from 'axios';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 @Injectable()
 export class FilesystemService implements OnModuleInit {
@@ -194,14 +197,30 @@ export class FilesystemService implements OnModuleInit {
         }
 
         case 'create_directory': {
-          const { directory } = args;
-          await fs.mkdir(path.resolve(directory), { recursive: true });
-          return this.ok(`Successfully created directory: ${directory}`);
+          try {
+            const { path } = args;
+
+            const absolutePath = path.resolve(path);
+
+            await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+
+            return {
+              success: true,
+              message: `Successfully created directory: ${path}`,
+            };
+          } catch (error) {
+            return {
+              success: false,
+              message: `Error creating directory: ${error.message}`,
+            };
+          }
         }
 
         case 'file_stats': {
           const { filepath } = args;
+
           const stats = await fs.stat(path.resolve(filepath));
+
           const statsInfo = {
             path: filepath,
             size: stats.size,
@@ -211,42 +230,64 @@ export class FilesystemService implements OnModuleInit {
             modified: stats.mtime.toISOString(),
             accessed: stats.atime.toISOString(),
           };
-          return this.ok(
-            `File Stats for ${filepath}:\n${JSON.stringify(statsInfo, null, 2)}`,
-          );
+
+          return `File Stats for ${filepath}`;
+        }
+
+        case 'show_wifi_password': {
+          try {
+            const { wifi_name } = args;
+
+            const command = wifi_name
+              ? `netsh wlan show profile name="${wifi_name}" key=clear`
+              : 'netsh wlan show profiles';
+
+            const { stdout } = await execAsync(command);
+            console.log('stdout', stdout
+              .split('\n')
+              .filter((line) => line.includes('All User Profile'))
+              .map((line) => line.split(':')[1].trim()));
+
+            if (!wifi_name) {
+              return {
+                success: true,
+                message: 'Available WiFi networks:',
+                networks: stdout
+                  .split('\n')
+                  .filter((line) => line.includes('All User Profile'))
+                  .map((line) => line.split(':')[1].trim()),
+              };
+            }
+
+            const passwordMatch = stdout.match(/Key Content\s*:\s*(.*)/);
+            console.log('passwordMatch', passwordMatch);
+            if (passwordMatch) {
+              return {
+                success: true,
+                message: `Network: ${wifi_name} ${passwordMatch[1].trim()}`,
+                password: passwordMatch[1].trim(),
+              };
+            }
+
+            return {
+              success: true,
+              message: `Network information for ${wifi_name} ${passwordMatch![1].trim()}`,
+              info: stdout,
+            };
+          } catch (error) {
+            return {
+              success: false,
+              message: `Error retrieving WiFi information: ${error.message}`,
+            };
+          }
         }
 
         default:
-          return this.error(`Unknown tool: ${name}`);
+          return `Unknown tool: ${name} `;
       }
     } catch (error) {
-      return this.error(
-        error instanceof Error ? error.message : 'Unknown error',
-      );
+      return error instanceof Error ? error.message : 'Unknown error';
     }
-  }
-
-  private ok(text: string) {
-    return {
-      content: [
-        {
-          type: 'text',
-          text,
-        } as TextContent,
-      ],
-    };
-  }
-
-  private error(text: string) {
-    return {
-      content: [
-        {
-          type: 'text',
-          text,
-        } as TextContent,
-      ],
-      isError: true,
-    };
   }
 
   async analyzePrompt(prompt: string) {
@@ -258,17 +299,17 @@ export class FilesystemService implements OnModuleInit {
       }
 
       const promptTemplate = `
-      You are a file system tool agent. Based on the user's prompt, determine which file system tool to use and its arguments.
-      Available tools: read_file, write_file, list_files, search_files, create_directory, file_stats.
+      You are a file system tool agent.Based on the user's prompt, determine which file system tool to use and its arguments.
+      Available tools: read_file, write_file, list_files, search_files, create_directory, file_stats, show_wifi_password.
+
+          Respond in this exact format:
+          Tool: [tool_name]
+          Args: {
+            "arg1": "value1",
+            "arg2": "value2"
+          }
       
-      Respond in this exact format:
-      Tool: [tool_name]
-      Args: {
-        "arg1": "value1",
-        "arg2": "value2"
-      }
-      
-      User prompt: ${prompt}`;
+      User prompt: ${prompt} `;
 
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
@@ -310,7 +351,6 @@ export class FilesystemService implements OnModuleInit {
         throw new Error('Failed to parse arguments JSON from LLM response');
       }
 
-      // Validate that the tool exists
       const toolExists = TOOLS.some((tool) => tool.name === toolName);
       if (!toolExists) {
         throw new Error(`Invalid tool name: ${toolName}`);
@@ -323,11 +363,9 @@ export class FilesystemService implements OnModuleInit {
       });
       return result;
     } catch (error) {
-      return this.error(
-        error instanceof Error
-          ? error.message
-          : 'Unknown error occurred while processing prompt',
-      );
+      return error instanceof Error
+        ? error.message
+        : 'Unknown error occurred while processing prompt';
     }
   }
 }
