@@ -1,10 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
@@ -12,39 +6,13 @@ import { TOOLS } from 'src/tools/file-tool';
 import axios from 'axios';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { FileSystemRepository } from './filesystem.repository';
 
 const execAsync = promisify(exec);
 
 @Injectable()
-export class FilesystemService implements OnModuleInit {
-  server: Server;
-
-  async onModuleInit() {
-    this.server = new Server(
-      {
-        name: 'file-system-server',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
-
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: TOOLS,
-    }));
-
-    this.server.setRequestHandler(
-      CallToolRequestSchema,
-      this.handleCall.bind(this),
-    );
-
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('File System MCP Server running on stdio');
-  }
+export class FilesystemService {
+  constructor(private readonly fileSystemRepository: FileSystemRepository) {}
 
   async handleCall(request: any) {
     console.log(
@@ -243,10 +211,6 @@ export class FilesystemService implements OnModuleInit {
               : 'netsh wlan show profiles';
 
             const { stdout } = await execAsync(command);
-            console.log('stdout', stdout
-              .split('\n')
-              .filter((line) => line.includes('All User Profile'))
-              .map((line) => line.split(':')[1].trim()));
 
             if (!wifi_name) {
               return {
@@ -260,11 +224,10 @@ export class FilesystemService implements OnModuleInit {
             }
 
             const passwordMatch = stdout.match(/Key Content\s*:\s*(.*)/);
-            console.log('passwordMatch', passwordMatch);
             if (passwordMatch) {
               return {
                 success: true,
-                message: `Network: ${wifi_name} ${passwordMatch[1].trim()}`,
+                message: `Network: ${wifi_name}, password: ${passwordMatch[1].trim()}`,
                 password: passwordMatch[1].trim(),
               };
             }
