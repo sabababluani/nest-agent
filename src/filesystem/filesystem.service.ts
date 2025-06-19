@@ -7,6 +7,7 @@ import axios from 'axios';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { FileSystemRepository } from './filesystem.repository';
+import { Action } from './entities/filesystem.entity';
 
 const execAsync = promisify(exec);
 
@@ -48,7 +49,12 @@ export class FilesystemService {
             const absolutePath = path.resolve(file_path);
             const content = await fs.readFile(absolutePath, 'utf-8');
 
-            
+            this.fileSystemRepository.createFilesystem({
+              name: prompt,
+              path: file_path,
+              action: Action.READ
+            });
+
             return {
               success: true,
               message: `content: ${content}`,
@@ -81,7 +87,8 @@ export class FilesystemService {
 
             this.fileSystemRepository.createFilesystem({
               name: prompt,
-              path: file_path
+              path: file_path,
+              action: Action.WRITE
             });
 
             return {
@@ -343,6 +350,14 @@ export class FilesystemService {
   }
 
   async getAllFile() {
-    return this.fileSystemRepository.getAllFile()
+    return this.fileSystemRepository.getAllFile();
+  }
+
+  async getReadFile() {
+    return this.fileSystemRepository.getReadFile();
+  }
+
+  async getWriteFile() {
+    return this.fileSystemRepository.getWriteFile();
   }
 }

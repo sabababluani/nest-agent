@@ -10,7 +10,7 @@ export class FilesystemController {
     return this.fsService.analyzePrompt(body.prompt);
   }
 
-  @Get(':id')
+  @Get('file/:id')
   getFilesystem(@Param('id') id: string) {
     return this.fsService.getFilesystem(+id);
   }
@@ -18,5 +18,15 @@ export class FilesystemController {
   @Get()
   getAllFile() {
     return this.fsService.getAllFile();
+  }
+
+  @Get('read')
+  getReadFile() {
+    return this.fsService.getReadFile()
+  }
+
+  @Get('write')
+  getWriteFile() {
+    return this.fsService.getWriteFile()
   }
 }

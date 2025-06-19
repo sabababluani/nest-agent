@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Filesystem } from './entities/filesystem.entity';
+import { Action, Filesystem } from './entities/filesystem.entity';
 import { Repository } from 'typeorm';
 import { CreateFilesystemDto } from './dto/create-filesystem.dto';
 
@@ -16,11 +16,20 @@ export class FileSystemRepository {
 
     newFilesystem.prompt = filesystem.name;
     newFilesystem.path = filesystem.path;
+    newFilesystem.action = Action.WRITE || Action.READ;
     return await this.fileSystemRepository.save(newFilesystem);
   }
 
   async getFilesystem(id: number) {
     return await this.fileSystemRepository.findOne({ where: { id } });
+  }
+
+  async getReadFile() {
+    return await this.fileSystemRepository.find({ where: { action: Action.READ } })
+  }
+
+  async getWriteFile() {
+    return await this.fileSystemRepository.find({ where: { action: Action.WRITE } })
   }
 
   async getAllFile() {

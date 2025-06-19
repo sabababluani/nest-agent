@@ -1,4 +1,5 @@
-import { IsString } from "class-validator";
+import { IsEnum, IsString } from "class-validator";
+import { Action } from "../entities/filesystem.entity";
 
 export class CreateFilesystemDto {
     
@@ -7,4 +8,7 @@ export class CreateFilesystemDto {
 
     @IsString()
     path: string;
+
+    @IsEnum(Action)
+    action: Action;
 }
