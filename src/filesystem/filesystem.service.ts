@@ -12,9 +12,9 @@ const execAsync = promisify(exec);
 
 @Injectable()
 export class FilesystemService {
-  constructor(private readonly fileSystemRepository: FileSystemRepository) {}
+  constructor(private readonly fileSystemRepository: FileSystemRepository) { }
 
-  async handleCall(request: any) {
+  async handleCall(request: any, prompt: string) {
     console.log(
       'handleCall received request:',
       JSON.stringify(request, null, 2),
@@ -48,6 +48,7 @@ export class FilesystemService {
             const absolutePath = path.resolve(file_path);
             const content = await fs.readFile(absolutePath, 'utf-8');
 
+            
             return {
               success: true,
               message: `content: ${content}`,
@@ -77,6 +78,11 @@ export class FilesystemService {
 
             await fs.mkdir(path.dirname(absolutePath), { recursive: true });
             await fs.writeFile(absolutePath, text, 'utf-8');
+
+            this.fileSystemRepository.createFilesystem({
+              name: prompt,
+              path: file_path
+            });
 
             return {
               success: true,
@@ -322,13 +328,21 @@ export class FilesystemService {
         params: {
           name: toolName,
           arguments: args,
-        },
-      });
+        }
+      }, prompt);
       return result;
     } catch (error) {
       return error instanceof Error
         ? error.message
         : 'Unknown error occurred while processing prompt';
     }
+  }
+
+  async getFilesystem(id: number) {
+    return this.fileSystemRepository.getFilesystem(id);
+  }
+
+  async getAllFile() {
+    return this.fileSystemRepository.getAllFile()
   }
 }

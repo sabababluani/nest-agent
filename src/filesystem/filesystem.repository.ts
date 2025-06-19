@@ -9,12 +9,21 @@ export class FileSystemRepository {
   constructor(
     @InjectRepository(Filesystem)
     private fileSystemRepository: Repository<Filesystem>,
-  ) {}
+  ) { }
 
-  async createFilesystem(filesystem: CreateFilesystemDto){
-    const newAction = new FileSystem();
+  async createFilesystem(filesystem: CreateFilesystemDto) {
+    const newFilesystem = new Filesystem();
 
-    // newAction.name = filesystem.name
-    return await this.fileSystemRepository.save(filesystem);
+    newFilesystem.prompt = filesystem.name;
+    newFilesystem.path = filesystem.path;
+    return await this.fileSystemRepository.save(newFilesystem);
+  }
+
+  async getFilesystem(id: number) {
+    return await this.fileSystemRepository.findOne({ where: { id } });
+  }
+
+  async getAllFile() {
+    return await this.fileSystemRepository.find()
   }
 }

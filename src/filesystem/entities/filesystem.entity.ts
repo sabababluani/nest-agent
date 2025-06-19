@@ -5,9 +5,9 @@ export class Filesystem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  name: string;
+  @Column({type : 'longtext' })
+  prompt: string;
 
-  @Column()
+  @Column({ nullable: true })
   path: string;
 }
