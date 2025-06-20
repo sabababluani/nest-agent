@@ -9,9 +9,9 @@ export class FileSystemRepository {
   constructor(
     @InjectRepository(Filesystem)
     private fileSystemRepository: Repository<Filesystem>,
-  ) { }
+  ) {}
 
-  async createFilesystem(filesystem: CreateFilesystemDto) {
+    async createFilesystem(filesystem: CreateFilesystemDto) {
     const newFilesystem = new Filesystem();
 
     newFilesystem.prompt = filesystem.name;
@@ -25,14 +25,18 @@ export class FileSystemRepository {
   }
 
   async getReadFile() {
-    return await this.fileSystemRepository.find({ where: { action: Action.READ } })
+    return await this.fileSystemRepository.find({
+      where: { action: Action.READ },
+    });
   }
 
   async getWriteFile() {
-    return await this.fileSystemRepository.find({ where: { action: Action.WRITE } })
+    return await this.fileSystemRepository.find({
+      where: { action: Action.WRITE },
+    });
   }
 
   async getAllFile() {
-    return await this.fileSystemRepository.find()
+    return await this.fileSystemRepository.find();
   }
 }
