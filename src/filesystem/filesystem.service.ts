@@ -6,8 +6,8 @@ import { TOOLS } from 'src/tools/file-tool';
 import axios from 'axios';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { FileSystemRepository } from './filesystem.repository';
 import { Action } from './entities/filesystem.entity';
+import { FileSystemRepository } from './repositories/filesystem.repository';
 
 const execAsync = promisify(exec);
 
@@ -154,7 +154,6 @@ export class FilesystemService {
             const absolutePath = path.resolve(directory);
 
             const searchPattern = recursive ? `**/${pattern}` : pattern;
-            console.log('sadasd', searchPattern);
 
             const files = await glob(searchPattern, {
               dot: true,
@@ -184,8 +183,6 @@ export class FilesystemService {
 
             const absolutePath = path.resolve(path);
             await fs.mkdir(absolutePath);
-
-            console.log(absolutePath);
 
             this.fileSystemRepository.createFilesystem({
               name: prompt,

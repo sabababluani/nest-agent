@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Action, Filesystem } from './entities/filesystem.entity';
 import { Repository } from 'typeorm';
-import { CreateFilesystemDto } from './dto/create-filesystem.dto';
+import { CreateFilesystemDto } from '../dto/create-filesystem.dto';
+import { Action, Filesystem } from '../entities/filesystem.entity';
 
 @Injectable()
 export class FileSystemRepository {
