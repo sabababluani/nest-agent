@@ -16,7 +16,7 @@ export class FileSystemRepository {
 
     newFilesystem.prompt = filesystem.name;
     newFilesystem.path = filesystem.path;
-    newFilesystem.action = Action.WRITE || Action.READ;
+    newFilesystem.action = filesystem.action;
     return await this.fileSystemRepository.save(newFilesystem);
   }
 

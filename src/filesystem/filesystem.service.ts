@@ -13,7 +13,7 @@ const execAsync = promisify(exec);
 
 @Injectable()
 export class FilesystemService {
-  constructor(private readonly fileSystemRepository: FileSystemRepository) { }
+  constructor(private readonly fileSystemRepository: FileSystemRepository) {}
 
   async handleCall(request: any, prompt: string) {
     console.log(
@@ -52,7 +52,7 @@ export class FilesystemService {
             this.fileSystemRepository.createFilesystem({
               name: prompt,
               path: file_path,
-              action: Action.READ
+              action: Action.READ,
             });
 
             return {
@@ -78,7 +78,7 @@ export class FilesystemService {
                 'Invalid or missing "file_path" or "content" argument',
               );
             }
-
+            
             const { file_path, content: text } = args;
             const absolutePath = path.resolve(file_path);
 
@@ -88,7 +88,7 @@ export class FilesystemService {
             this.fileSystemRepository.createFilesystem({
               name: prompt,
               path: file_path,
-              action: Action.WRITE
+              action: Action.WRITE,
             });
 
             return {
@@ -154,6 +154,7 @@ export class FilesystemService {
             const absolutePath = path.resolve(directory);
 
             const searchPattern = recursive ? `**/${pattern}` : pattern;
+            console.log('sadasd', searchPattern);
 
             const files = await glob(searchPattern, {
               dot: true,
@@ -182,8 +183,15 @@ export class FilesystemService {
             const { path } = args;
 
             const absolutePath = path.resolve(path);
+            await fs.mkdir(absolutePath);
 
-            await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+            console.log(absolutePath);
+
+            this.fileSystemRepository.createFilesystem({
+              name: prompt,
+              path: path,
+              action: Action.CREATE,
+            });
 
             return {
               success: true,
@@ -195,24 +203,6 @@ export class FilesystemService {
               message: `Error creating directory: ${error.message}`,
             };
           }
-        }
-
-        case 'file_stats': {
-          const { filepath } = args;
-
-          const stats = await fs.stat(path.resolve(filepath));
-
-          const statsInfo = {
-            path: filepath,
-            size: stats.size,
-            isFile: stats.isFile(),
-            isDirectory: stats.isDirectory(),
-            created: stats.birthtime.toISOString(),
-            modified: stats.mtime.toISOString(),
-            accessed: stats.atime.toISOString(),
-          };
-
-          return `File Stats for ${filepath}`;
         }
 
         case 'show_wifi_password': {
@@ -331,12 +321,15 @@ export class FilesystemService {
       if (!toolExists) {
         throw new Error(`Invalid tool name: ${toolName}`);
       }
-      const result = await this.handleCall({
-        params: {
-          name: toolName,
-          arguments: args,
-        }
-      }, prompt);
+      const result = await this.handleCall(
+        {
+          params: {
+            name: toolName,
+            arguments: args,
+          },
+        },
+        prompt,
+      );
       return result;
     } catch (error) {
       return error instanceof Error
