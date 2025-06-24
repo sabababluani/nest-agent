@@ -3,7 +3,7 @@ import { FilesystemService } from './filesystem.service';
 import { FilesystemController } from './filesystem.controller';
 import { Filesystem } from './entities/filesystem.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { FileSystemRepository } from './filesystem.repository';
+import { FileSystemRepository } from './repositories/filesystem.repository';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Filesystem])],

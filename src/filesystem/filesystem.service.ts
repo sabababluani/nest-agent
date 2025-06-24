@@ -13,7 +13,7 @@ const execAsync = promisify(exec);
 
 @Injectable()
 export class FilesystemService {
-  constructor(private readonly fileSystemRepository: FileSystemRepository) {}
+  constructor(private readonly fileSystemRepository: FileSystemRepository) { }
 
   async handleCall(request: any, prompt: string) {
     console.log(
@@ -78,7 +78,7 @@ export class FilesystemService {
                 'Invalid or missing "file_path" or "content" argument',
               );
             }
-            
+
             const { file_path, content: text } = args;
             const absolutePath = path.resolve(file_path);
 
@@ -140,20 +140,13 @@ export class FilesystemService {
 
         case 'search_files': {
           try {
-            if (
-              !args ||
-              typeof args.directory !== 'string' ||
-              typeof args.pattern !== 'string'
-            ) {
-              throw new Error(
-                'Invalid or missing "directory" or "pattern" argument',
-              );
-            }
+            const { directory, query, recursive = true } = args;
 
-            const { directory, pattern, recursive = true } = args;
+            console.log(typeof query);
+
+
             const absolutePath = path.resolve(directory);
-
-            const searchPattern = recursive ? `**/${pattern}` : pattern;
+            const searchPattern = recursive ? `**/*${query}*` : `*${query}*`;
 
             const files = await glob(searchPattern, {
               dot: true,
@@ -166,7 +159,7 @@ export class FilesystemService {
 
             return {
               success: true,
-              message: `Found ${files.length} files matching "${pattern}" in ${directory}:\n${fileList.join('\n')}`,
+              message: `Found ${files.length} files matching "${query}" in ${directory}`,
               files: fileList,
             };
           } catch (error) {
@@ -179,20 +172,19 @@ export class FilesystemService {
 
         case 'create_directory': {
           try {
-            const { path } = args;
+            const { path: dirPath } = args;
 
-            const absolutePath = path.resolve(path);
-            await fs.mkdir(absolutePath);
+            await fs.mkdir(path.resolve(dirPath));
 
             this.fileSystemRepository.createFilesystem({
               name: prompt,
-              path: path,
+              path: dirPath,
               action: Action.CREATE,
             });
 
             return {
               success: true,
-              message: `Successfully created directory: ${path}`,
+              message: `Successfully created directory: ${dirPath}`,
             };
           } catch (error) {
             return {
