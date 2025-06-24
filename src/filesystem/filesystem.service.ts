@@ -125,6 +125,12 @@ export class FilesystemService {
               path.relative(absolutePath, path.join(absolutePath, file)),
             );
 
+            this.fileSystemRepository.createFilesystem({
+              name: prompt,
+              path: directory,
+              action: Action.LIST
+            })
+
             return {
               success: true,
               message: `Files: ${fileList.join(', ')}`,
@@ -153,6 +159,12 @@ export class FilesystemService {
             });
 
             const fileList = files;
+
+            this.fileSystemRepository.createFilesystem({
+              name: prompt,
+              path: directory,
+              action: Action.SEARCH
+            })
 
             return {
               success: true,
@@ -221,6 +233,11 @@ export class FilesystemService {
               };
             }
 
+            this.fileSystemRepository.createFilesystem({
+              name: prompt,
+              action: Action.WIFI
+            })
+
             return {
               success: true,
               message: `Network information for ${wifi_name} ${passwordMatch![1].trim()}`,
@@ -252,7 +269,7 @@ export class FilesystemService {
 
       const promptTemplate = `
       You are a file system tool agent.Based on the user's prompt, determine which file system tool to use and its arguments.
-      Available tools: read_file, write_file, list_files, search_files, create_directory, file_stats, show_wifi_password.
+      Available tools: ${TOOLS.map((tool) => tool.name).join(', ')}.
 
           Respond in this exact format:
           Tool: [tool_name]
@@ -306,6 +323,7 @@ export class FilesystemService {
       if (!toolExists) {
         throw new Error(`Invalid tool name: ${toolName}`);
       }
+      
       const result = await this.handleCall(
         {
           params: {

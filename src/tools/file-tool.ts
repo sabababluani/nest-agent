@@ -121,5 +121,5 @@ export const TOOLS: Tool[] = [
       },
       required: [],
     },
-  },
+  }
 ];

@@ -1,4 +1,4 @@
-import { IsEnum, IsString } from "class-validator";
+import { IsEnum, IsOptional, IsString } from "class-validator";
 import { Action } from "../enums/action.enum";
 
 export class CreateFilesystemDto {
@@ -6,7 +6,8 @@ export class CreateFilesystemDto {
     name: string;
 
     @IsString()
-    path: string;
+    @IsOptional()
+    path?: string;
 
     @IsEnum(Action)
     action: Action;

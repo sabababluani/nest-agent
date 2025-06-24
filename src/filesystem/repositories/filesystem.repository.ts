@@ -2,20 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateFilesystemDto } from '../dto/create-filesystem.dto';
-import { Action, Filesystem } from '../entities/filesystem.entity';
+import { Filesystem } from '../entities/filesystem.entity';
+import { Action } from '../enums/action.enum';
 
 @Injectable()
 export class FileSystemRepository {
   constructor(
     @InjectRepository(Filesystem)
     private fileSystemRepository: Repository<Filesystem>,
-  ) {}
+  ) { }
 
-    async createFilesystem(filesystem: CreateFilesystemDto) {
+  async createFilesystem(filesystem: CreateFilesystemDto) {
     const newFilesystem = new Filesystem();
 
     newFilesystem.prompt = filesystem.name;
-    newFilesystem.path = filesystem.path;
+    newFilesystem.path = filesystem.path || '';
     newFilesystem.action = filesystem.action;
     return await this.fileSystemRepository.save(newFilesystem);
   }
