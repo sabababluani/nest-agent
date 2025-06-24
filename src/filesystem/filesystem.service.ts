@@ -8,8 +8,10 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { Action } from './enums/action.enum';
 import { FileSystemRepository } from './repositories/filesystem.repository';
+import * as dotenv from 'dotenv'
 
 const execAsync = promisify(exec);
+dotenv.config();
 
 @Injectable()
 export class FilesystemService {
@@ -262,8 +264,8 @@ export class FilesystemService {
   async analyzePrompt(prompt: string) {
     try {
       console.log('Starting analyzePrompt with prompt:', prompt);
-      const geminiApiKey = 'AIzaSyD7Rul-NrOtsb_8qAakJHK4s640nHCmQuo';
-      if (!geminiApiKey) {
+
+      if (!process.env.GEMINI_API_KEY) {
         throw new Error('GEMINI_API_KEY environment variable is not set');
       }
 
@@ -278,10 +280,10 @@ export class FilesystemService {
             "arg2": "value2"
           }
       
-      User prompt: ${prompt} `;
+      User prompt: ${prompt}`.trim();
 
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
           contents: [
             {
@@ -323,7 +325,7 @@ export class FilesystemService {
       if (!toolExists) {
         throw new Error(`Invalid tool name: ${toolName}`);
       }
-      
+
       const result = await this.handleCall(
         {
           params: {
