@@ -1,10 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-
-export enum Action {
-  READ = 'read',
-  WRITE = 'write',
-  CREATE = 'create',
-}
+import { Action } from '../enums/action.enum';
 
 @Entity()
 export class Filesystem {

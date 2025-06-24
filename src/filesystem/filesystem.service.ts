@@ -6,7 +6,7 @@ import { TOOLS } from 'src/tools/file-tool';
 import axios from 'axios';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { Action } from './entities/filesystem.entity';
+import { Action } from './enums/action.enum';
 import { FileSystemRepository } from './repositories/filesystem.repository';
 
 const execAsync = promisify(exec);
@@ -141,9 +141,6 @@ export class FilesystemService {
         case 'search_files': {
           try {
             const { directory, query, recursive = true } = args;
-
-            console.log(typeof query);
-
 
             const absolutePath = path.resolve(directory);
             const searchPattern = recursive ? `**/*${query}*` : `*${query}*`;
@@ -297,7 +294,6 @@ export class FilesystemService {
       }
 
       const toolName = toolMatch[1];
-      console.log(toolMatch[1]);
 
       let args;
       try {
