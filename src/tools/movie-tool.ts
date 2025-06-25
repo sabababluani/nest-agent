@@ -37,8 +37,12 @@ export const MOVIE_TOOLS = [
             type: 'number',
             description: 'The year the movie was released',
           },
+          plot: {
+            type: 'string',
+            description: 'The plot of the movie',
+          },
         },
-        required: ['title', 'year'],
+        required: ['title', 'year', 'plot'],
       },
     },
   },
