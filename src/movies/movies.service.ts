@@ -1,13 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadGatewayException, Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { MOVIE_PROMPT } from './utils/movie-prompt.util';
 import { MoviesRepository } from './repositories/movies.repository';
 import { MOVIE_TOOLS } from 'src/tools/movie-tool';
-
-export interface ToolCall {
-  tool: string;
-  args: Record<string, any>;
-}
+import { ToolCall } from './interfaces/tool-call.interface';
 
 @Injectable()
 export class MoviesService {
@@ -73,12 +69,11 @@ export class MoviesService {
         toolResult,
       };
     } catch (error) {
-      console.error('Error in analyzePrompt:', error);
       throw new Error(`Failed to analyze prompt: ${error.message}`);
     }
   }
 
-  parseToolCall(text: string): ToolCall | null {
+  parseToolCall(text: string) {
     try {
       console.log('Parsing tool call from text:', text);
 
@@ -86,7 +81,6 @@ export class MoviesService {
       const argsMatch = text.match(/Args:\s*(\{[\s\S]*?\})/i);
 
       if (!toolMatch) {
-        console.log('No tool match found');
         return null;
       }
 
@@ -108,12 +102,11 @@ export class MoviesService {
       console.log('Successfully parsed tool call:', { tool, args });
       return { tool, args };
     } catch (error) {
-      console.error('Error parsing tool call:', error);
       return null;
     }
   }
 
-  formatToolResponse(toolCall: ToolCall, result: any): string {
+  formatToolResponse(toolCall: ToolCall, result: any) {
     console.log('Formatting tool response for:', toolCall.tool);
 
     switch (toolCall.tool) {
@@ -138,7 +131,7 @@ export class MoviesService {
     }
   }
 
-  async executeTool(toolCall: ToolCall): Promise<any> {
+  async executeTool(toolCall: ToolCall) {
     const { tool, args } = toolCall;
     console.log('Executing tool:', tool, 'with args:', args);
 
@@ -226,6 +219,8 @@ export class MoviesService {
   async addToWatchlist(title: string, year: number, plot: string) {
     try {
       this.moviesRepository.addToWatchList({ title, year, plot });
-    } catch (err) {}
+    } catch (err) {
+      throw new BadGatewayException('failed to add to watchlist');
+    }
   }
 }
