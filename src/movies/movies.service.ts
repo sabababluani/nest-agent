@@ -7,7 +7,7 @@ import { ToolCall } from './interfaces/tool-call.interface';
 
 @Injectable()
 export class MoviesService {
-  constructor(private readonly moviesRepository: MoviesRepository) {}
+  constructor(private readonly moviesRepository: MoviesRepository) { }
 
   async analyzePrompt(prompt: string) {
     try {
@@ -21,12 +21,19 @@ export class MoviesService {
 
       Available tools: ${JSON.stringify(MOVIE_TOOLS, null, 2)}
 
-      Respond in this exact format:
+      You can use multiple tools if needed. Respond in this exact format for each tool:
       Tool: [tool_name]
       Args: {
         "arg1": "value1",
         "arg2": "value2"
       }
+
+      If multiple tools are needed, separate them with "---" like this:
+      Tool: search_movie
+      Args: {"title": "Inception"}
+      ---
+      Tool: add_to_watchlist
+      Args: {"title": "Inception", "year": 2010, "plot": "A thief who steals corporate secrets..."}
 
       User prompt: ${prompt}`.trim();
 
@@ -51,32 +58,82 @@ export class MoviesService {
 
       if (!text) throw new Error('No response from Gemini API');
 
-      const toolCall = this.parseToolCall(text);
-      console.log('Parsed tool call:', toolCall);
+      const toolCalls = this.parseMultipleToolCalls(text);
+      console.log('Parsed tool calls:', toolCalls);
 
-      if (!toolCall) {
-        console.log('No tool call found, returning plain text response');
+      if (!toolCalls || toolCalls.length === 0) {
+        console.log('No tool calls found, returning plain text response');
         return { message: text, toolUsed: false };
       }
 
-      const toolResult = await this.executeTool(toolCall);
-      console.log('Tool result:', toolResult);
+      const results: any = [];
+      let searchResult: any = null;
+
+      for (const toolCall of toolCalls) {
+        console.log('Executing tool:', toolCall);
+
+        if (toolCall.tool === 'add_to_watchlist' && searchResult) {
+          toolCall.args = {
+            title: toolCall.args.title || searchResult.title,
+            year: toolCall.args.year || searchResult.year,
+            plot: toolCall.args.plot || searchResult.plot,
+            ...toolCall.args
+          };
+        }
+
+        const toolResult = await this.executeTool(toolCall);
+        console.log('Tool result:', toolResult);
+
+        if (toolCall.tool === 'search_movie') {
+          searchResult = toolResult;
+        }
+
+        results.push({
+          toolCall,
+          result: toolResult,
+          formattedResponse: this.formatToolResponse(toolCall, toolResult)
+        });
+      }
+
+      const combinedMessage = results
+        .map(r => r.formattedResponse)
+        .join('\n\n');
 
       return {
-        message: this.formatToolResponse(toolCall, toolResult),
+        message: combinedMessage,
         toolUsed: true,
-        toolCall,
-        toolResult,
+        toolCalls: toolCalls,
+        toolResults: results,
       };
     } catch (error) {
       throw new Error(`Failed to analyze prompt: ${error.message}`);
     }
   }
 
-  parseToolCall(text: string) {
+  parseMultipleToolCalls(text: string): ToolCall[] {
     try {
-      console.log('Parsing tool call from text:', text);
+      console.log('Parsing multiple tool calls from text:', text);
 
+      const sections = text.includes('---') ? text.split('---') : [text];
+      const toolCalls: ToolCall[] = [];
+
+      for (const section of sections) {
+        const toolCall = this.parseSingleToolCall(section.trim());
+        if (toolCall) {
+          toolCalls.push(toolCall);
+        }
+      }
+
+      console.log('Successfully parsed tool calls:', toolCalls);
+      return toolCalls;
+    } catch (error) {
+      console.error('Error parsing multiple tool calls:', error);
+      return [];
+    }
+  }
+
+  parseSingleToolCall(text: string): ToolCall | null {
+    try {
       const toolMatch = text.match(/Tool:\s*([^\n\r]+)/i);
       const argsMatch = text.match(/Args:\s*(\{[\s\S]*?\})/i);
 
@@ -99,11 +156,16 @@ export class MoviesService {
         }
       }
 
-      console.log('Successfully parsed tool call:', { tool, args });
       return { tool, args };
     } catch (error) {
+      console.error('Error parsing single tool call:', error);
       return null;
     }
+  }
+
+  parseToolCall(text: string) {
+    const toolCalls = this.parseMultipleToolCalls(text);
+    return toolCalls.length > 0 ? toolCalls[0] : null;
   }
 
   formatToolResponse(toolCall: ToolCall, result: any) {
@@ -116,15 +178,15 @@ export class MoviesService {
         const movie = result;
 
         return (
-          `Found "${movie.title}" (${movie.year})` +
-          `Director: ${movie.director || 'N/A'}` +
-          `Genre: ${movie.genre || 'N/A'}` +
-          `IMDB Rating: ${movie.imdbRating || 'N/A'}` +
+          `Found "${movie.title}" (${movie.year})\n` +
+          `Director: ${movie.director || 'N/A'}\n` +
+          `Genre: ${movie.genre || 'N/A'}\n` +
+          `IMDB Rating: ${movie.imdbRating || 'N/A'}\n` +
           `Plot: ${movie.plot || 'N/A'}`
         );
 
       case 'add_to_watchlist':
-        return result?.message || 'Added to watchlist';
+        return result?.message || 'Added to watchlist successfully';
 
       default:
         return JSON.stringify(result, null, 2);
@@ -177,7 +239,7 @@ export class MoviesService {
       console.log(
         'Making OMDB API request with params:',
         params.toString(),
-        `endpint https://www.omdbapi.com/?${params}`,
+        `endpoint https://www.omdbapi.com/?${params}`,
       );
 
       const response = await axios.get(`https://www.omdbapi.com/?${params}`);
@@ -218,9 +280,10 @@ export class MoviesService {
 
   async addToWatchlist(title: string, year: number, plot: string) {
     try {
-      this.moviesRepository.addToWatchList({ title, year, plot });
+      await this.moviesRepository.addToWatchList({ title, year, plot });
+      return { message: `Successfully added "${title}" to watchlist` };
     } catch (err) {
-      throw new BadGatewayException('failed to add to watchlist');
+      throw new BadGatewayException('Failed to add to watchlist');
     }
   }
 }
