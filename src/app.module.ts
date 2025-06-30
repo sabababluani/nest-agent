@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { FilesystemModule } from './filesystem/filesystem.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MoviesModule } from './movies/movies.module';
+import { PromptsModule } from './prompts/prompts.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { MoviesModule } from './movies/movies.module';
       synchronize: true,
     }),
     MoviesModule,
+    PromptsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
