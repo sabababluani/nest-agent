@@ -23,5 +23,4 @@ export class MoviesRepository {
   async getWatchList() {
     return await this.movieRepository.find()
   }
-  
 }

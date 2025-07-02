@@ -1,13 +1,12 @@
-import { IsNumber, IsString } from "class-validator";
+import { IsNumber, IsString } from 'class-validator';
 
 export class CreateMovieDto {
+  @IsString()
+  title: string;
 
-    @IsString()
-    title: string;
+  @IsNumber()
+  year: number;
 
-    @IsNumber()
-    year: number;
-
-    @IsString()
-    plot: string;
+  @IsString()
+  plot: string;
 }
