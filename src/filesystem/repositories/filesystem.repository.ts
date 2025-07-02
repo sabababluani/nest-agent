@@ -10,7 +10,7 @@ export class FileSystemRepository {
   constructor(
     @InjectRepository(Filesystem)
     private fileSystemRepository: Repository<Filesystem>,
-  ) { }
+  ) {}
 
   async createFilesystem(filesystem: CreateFilesystemDto) {
     const newFilesystem = new Filesystem();

@@ -8,14 +8,14 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { Action } from './enums/action.enum';
 import { FileSystemRepository } from './repositories/filesystem.repository';
-import * as dotenv from 'dotenv'
+import * as dotenv from 'dotenv';
 
 const execAsync = promisify(exec);
 dotenv.config();
 
 @Injectable()
 export class FilesystemService {
-  constructor(private readonly fileSystemRepository: FileSystemRepository) { }
+  constructor(private readonly fileSystemRepository: FileSystemRepository) {}
 
   async handleCall(request: any, prompt: string) {
     console.log(
@@ -130,8 +130,8 @@ export class FilesystemService {
             this.fileSystemRepository.createFilesystem({
               name: prompt,
               path: directory,
-              action: Action.LIST
-            })
+              action: Action.LIST,
+            });
 
             return {
               success: true,
@@ -165,8 +165,8 @@ export class FilesystemService {
             this.fileSystemRepository.createFilesystem({
               name: prompt,
               path: directory,
-              action: Action.SEARCH
-            })
+              action: Action.SEARCH,
+            });
 
             return {
               success: true,
@@ -237,8 +237,8 @@ export class FilesystemService {
 
             this.fileSystemRepository.createFilesystem({
               name: prompt,
-              action: Action.WIFI
-            })
+              action: Action.WIFI,
+            });
 
             return {
               success: true,

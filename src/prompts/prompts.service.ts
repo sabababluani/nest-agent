@@ -40,7 +40,6 @@ export class PromptsService {
 
     try {
       const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
       const improvedPromptDto: CreatePromptDto = {
         prompt: text,
       };

@@ -22,11 +22,11 @@ export class FilesystemController {
 
   @Get('read')
   getReadFile() {
-    return this.fsService.getReadFile()
+    return this.fsService.getReadFile();
   }
 
   @Get('write')
   getWriteFile() {
-    return this.fsService.getWriteFile()
+    return this.fsService.getWriteFile();
   }
 }
