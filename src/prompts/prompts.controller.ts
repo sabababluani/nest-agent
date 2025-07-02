@@ -7,9 +7,7 @@ export class PromptsController {
   constructor(private readonly promptsService: PromptsService) {}
 
   @Post()
-  async analyzePrompt(@Body() body: CreatePromptDto) {
-    console.log(body.prompt);
-    
-    return this.promptsService.analyzePrompt(body.prompt);
+  async analyzePrompt(@Body() createPromptDto: CreatePromptDto) {
+    return this.promptsService.analyzePrompt(createPromptDto);
   }
 }

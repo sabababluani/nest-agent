@@ -7,7 +7,7 @@ import { ToolCall } from './interfaces/tool-call.interface';
 
 @Injectable()
 export class MoviesService {
-  constructor(private readonly moviesRepository: MoviesRepository) { }
+  constructor(private readonly moviesRepository: MoviesRepository) {}
 
   async analyzePrompt(prompt: string) {
     try {
@@ -17,40 +17,31 @@ export class MoviesService {
         throw new Error('GEMINI_API_KEY environment variable is not set');
       }
 
-      const promptTemplate = `Here is your system prompt: ${MOVIE_PROMPT}
+      // Simplified prompt - more direct instructions
+      const promptTemplate = `${MOVIE_PROMPT}
 
-      Available tools: ${JSON.stringify(MOVIE_TOOLS, null, 2)}
+        Available tools: ${JSON.stringify(MOVIE_TOOLS, null, 2)}
 
-      You can use multiple tools if needed. Respond in this exact format for each tool:
-      Tool: [tool_name]
-      Args: {
-        "arg1": "value1",
-        "arg2": "value2"
-      }
+        IMPORTANT: When user asks to search and add to watchlist, you MUST use BOTH tools:
+        1. First use search_movie to get movie details
+        2. Then use add_to_watchlist with the found details
 
-      If multiple tools are needed, separate them with "---" like this:
-      Tool: search_movie
-      Args: {"title": "Inception"}
-      ---
-      Tool: add_to_watchlist
-      Args: {"title": "Inception", "year": 2010, "plot": "A thief who steals corporate secrets..."}
+        Respond with tool calls in this exact format:
+        TOOL_CALL_START
+        Tool: tool_name
+        Args: {"arg1": "value1"}
+        TOOL_CALL_END
 
-      User prompt: ${prompt}`.trim();
+        For multiple tools, use multiple TOOL_CALL blocks.
+
+        User request: ${prompt}`;
 
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
-          contents: [
-            {
-              parts: [{ text: promptTemplate }],
-            },
-          ],
+          contents: [{ parts: [{ text: promptTemplate }] }],
         },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
+        { headers: { 'Content-Type': 'application/json' } },
       );
 
       const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -58,45 +49,95 @@ export class MoviesService {
 
       if (!text) throw new Error('No response from Gemini API');
 
-      const toolCalls = this.parseMultipleToolCalls(text);
-      console.log('Parsed tool calls:', toolCalls);
+      // Check if this is a search + add to watchlist request
+      const isSearchAndAdd =
+        prompt.toLowerCase().includes('search') &&
+        (prompt.toLowerCase().includes('add') ||
+          prompt.toLowerCase().includes('watchlist'));
+
+      let toolCalls = this.parseToolCalls(text);
+      console.log('Initial parsed tool calls:', toolCalls);
+
+      // If it's a search+add request but we only got search, force add the watchlist tool
+      if (
+        isSearchAndAdd &&
+        toolCalls.length === 1 &&
+        toolCalls[0].tool === 'search_movie'
+      ) {
+        console.log(
+          'Detected search+add request, forcing add_to_watchlist tool',
+        );
+        toolCalls.push({
+          tool: 'add_to_watchlist',
+          args: { title: toolCalls[0].args.title },
+        });
+      }
 
       if (!toolCalls || toolCalls.length === 0) {
         console.log('No tool calls found, returning plain text response');
         return { message: text, toolUsed: false };
       }
 
+      // Execute tools sequentially
       const results: any = [];
-      let searchResult: any = null;
+      let movieData: any = null;
 
       for (const toolCall of toolCalls) {
-        console.log('Executing tool:', toolCall);
+        console.log(
+          'Executing tool:',
+          toolCall.tool,
+          'with args:',
+          toolCall.args,
+        );
 
-        if (toolCall.tool === 'add_to_watchlist' && searchResult) {
-          toolCall.args = {
-            title: toolCall.args.title || searchResult.title,
-            year: toolCall.args.year || searchResult.year,
-            plot: toolCall.args.plot || searchResult.plot,
-            ...toolCall.args
-          };
+        try {
+          let toolResult;
+
+          if (toolCall.tool === 'search_movie') {
+            toolResult = await this.searchMovie(
+              toolCall.args.title,
+              toolCall.args.year,
+            );
+            movieData = toolResult; // Store for potential watchlist addition
+          } else if (toolCall.tool === 'add_to_watchlist') {
+            // Use movie data from search if available
+            const title = toolCall.args.title || movieData?.title;
+            const year = toolCall.args.year || movieData?.year;
+            const plot = toolCall.args.plot || movieData?.plot;
+
+            if (!title) {
+              throw new Error(
+                'No movie title available for watchlist addition',
+              );
+            }
+
+            toolResult = await this.addToWatchlist(title, year, plot);
+          } else {
+            throw new Error(`Unknown tool: ${toolCall.tool}`);
+          }
+
+          results.push({
+            toolCall,
+            result: toolResult,
+            formattedResponse: this.formatToolResponse(toolCall, toolResult),
+          });
+
+          console.log(
+            `Tool ${toolCall.tool} executed successfully:`,
+            toolResult,
+          );
+        } catch (error) {
+          console.error(`Error executing tool ${toolCall.tool}:`, error);
+          results.push({
+            toolCall,
+            result: { error: error.message },
+            formattedResponse: `Error with ${toolCall.tool}: ${error.message}`,
+          });
         }
-
-        const toolResult = await this.executeTool(toolCall);
-        console.log('Tool result:', toolResult);
-
-        if (toolCall.tool === 'search_movie') {
-          searchResult = toolResult;
-        }
-
-        results.push({
-          toolCall,
-          result: toolResult,
-          formattedResponse: this.formatToolResponse(toolCall, toolResult)
-        });
       }
 
       const combinedMessage = results
-        .map(r => r.formattedResponse)
+        .map((r) => r.formattedResponse)
         .join('\n\n');
 
       return {
@@ -106,30 +147,40 @@ export class MoviesService {
         toolResults: results,
       };
     } catch (error) {
+      console.error('Error in analyzePrompt:', error);
       throw new Error(`Failed to analyze prompt: ${error.message}`);
     }
   }
 
-  parseMultipleToolCalls(text: string): ToolCall[] {
-    try {
-      console.log('Parsing multiple tool calls from text:', text);
+  parseToolCalls(text: string): ToolCall[] {
+    const toolCalls: ToolCall[] = [];
+    console.log('Parsing tool calls from text:', text);
 
+    // Look for TOOL_CALL_START...TOOL_CALL_END blocks
+    const toolCallBlocks = text.match(
+      /TOOL_CALL_START([\s\S]*?)TOOL_CALL_END/g,
+    );
+
+    if (toolCallBlocks) {
+      for (const block of toolCallBlocks) {
+        const toolCall = this.parseSingleToolCall(block);
+        if (toolCall) {
+          toolCalls.push(toolCall);
+        }
+      }
+    } else {
+      // Fallback to old parsing method
       const sections = text.includes('---') ? text.split('---') : [text];
-      const toolCalls: ToolCall[] = [];
-
       for (const section of sections) {
         const toolCall = this.parseSingleToolCall(section.trim());
         if (toolCall) {
           toolCalls.push(toolCall);
         }
       }
-
-      console.log('Successfully parsed tool calls:', toolCalls);
-      return toolCalls;
-    } catch (error) {
-      console.error('Error parsing multiple tool calls:', error);
-      return [];
     }
+
+    console.log('Parsed tool calls:', toolCalls);
+    return toolCalls;
   }
 
   parseSingleToolCall(text: string): ToolCall | null {
@@ -147,12 +198,14 @@ export class MoviesService {
       if (argsMatch) {
         try {
           const argsText = argsMatch[1].trim();
-          console.log('Parsing args:', argsText);
           args = JSON.parse(argsText);
         } catch (parseError) {
           console.error('Failed to parse args JSON:', parseError);
-          console.error('Args text was:', argsMatch[1]);
-          args = {};
+          // Try to extract at least the title if JSON parsing fails
+          const titleMatch = text.match(/"title":\s*"([^"]+)"/i);
+          if (titleMatch) {
+            args = { title: titleMatch[1] };
+          }
         }
       }
 
@@ -163,62 +216,37 @@ export class MoviesService {
     }
   }
 
-  parseToolCall(text: string) {
-    const toolCalls = this.parseMultipleToolCalls(text);
-    return toolCalls.length > 0 ? toolCalls[0] : null;
-  }
-
   formatToolResponse(toolCall: ToolCall, result: any) {
-    console.log('Formatting tool response for:', toolCall.tool);
-
     switch (toolCall.tool) {
       case 'search_movie':
-        if (!result) return 'Movie not found';
-
-        const movie = result;
+        if (!result || result.error) {
+          return `Movie search failed: ${result?.error || 'Movie not found'}`;
+        }
 
         return (
-          `Found "${movie.title}" (${movie.year})\n` +
-          `Director: ${movie.director || 'N/A'}\n` +
-          `Genre: ${movie.genre || 'N/A'}\n` +
-          `IMDB Rating: ${movie.imdbRating || 'N/A'}\n` +
-          `Plot: ${movie.plot || 'N/A'}`
+          `🎬 Found "${result.title}" (${result.year})\n` +
+          `📽️ Director: ${result.director || 'N/A'}\n` +
+          `🎭 Genre: ${result.genre || 'N/A'}\n` +
+          `⭐ IMDB Rating: ${result.imdbRating || 'N/A'}\n` +
+          `📖 Plot: ${result.plot || 'N/A'}`
         );
 
       case 'add_to_watchlist':
-        return result?.message || 'Added to watchlist successfully';
+        if (result?.error) {
+          return `❌ Failed to add to watchlist: ${result.error}`;
+        }
+        return `✅ ${result?.message || 'Successfully added to watchlist!'}`;
 
       default:
         return JSON.stringify(result, null, 2);
     }
   }
 
-  async executeTool(toolCall: ToolCall) {
-    const { tool, args } = toolCall;
-    console.log('Executing tool:', tool, 'with args:', args);
-
-    switch (tool) {
-      case 'search_movie':
-        const title = args.title || args.name;
-        const year = args.year ? parseInt(args.year.toString()) : undefined;
-
-        if (!title) {
-          throw new Error('Movie title is required for search_movie tool');
-        }
-
-        return await this.searchMovie(title, year);
-
-      case 'add_to_watchlist':
-        return await this.addToWatchlist(args.title, args.year, args.plot);
-
-      default:
-        throw new Error(`Unknown tool: ${tool}`);
-    }
-  }
-
   async searchMovie(title: string, year?: number) {
     try {
-      console.log(`Searching for movie: "${title}"${year ? ` (${year})` : ''}`);
+      console.log(
+        `🔍 Searching for movie: "${title}"${year ? ` (${year})` : ''}`,
+      );
 
       const apiKey = process.env.OMDB_API_KEY;
       if (!apiKey) {
@@ -236,24 +264,15 @@ export class MoviesService {
         params.append('y', year.toString());
       }
 
-      console.log(
-        'Making OMDB API request with params:',
-        params.toString(),
-        `endpoint https://www.omdbapi.com/?${params}`,
-      );
-
-      const response = await axios.get(`https://www.omdbapi.com/?${params}`);
-
-      console.log('OMDB API response status:', response.status);
-      console.log('OMDB API response data:', response.data);
+      const response = await axios.get(`https://www.omdbapi.com/?${params}`, {
+        timeout: 10000, // 10 second timeout
+      });
 
       if (response.data.Response === 'False') {
-        const errorMessage = response.data.Error || 'Movie not found';
-        throw new Error(errorMessage);
+        throw new Error(response.data.Error || 'Movie not found');
       }
 
       const movie = response.data;
-
       const result = {
         title: movie.Title,
         year: parseInt(movie.Year) || null,
@@ -267,23 +286,37 @@ export class MoviesService {
         released: movie.Released,
       };
 
-      console.log('Successfully parsed movie data:', result);
+      console.log('✅ Movie found:', result.title, result.year);
       return result;
     } catch (error) {
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('Request timeout - OMDB API is not responding');
-      }
-
-      throw new Error(`Failed to search movie: ${error.message}`);
+      console.error('❌ Movie search failed:', error.message);
+      throw error;
     }
   }
 
   async addToWatchlist(title: string, year: number, plot: string) {
     try {
-      await this.moviesRepository.addToWatchList({ title, year, plot });
-      return { message: `Successfully added "${title}" to watchlist` };
-    } catch (err) {
-      throw new BadGatewayException('Failed to add to watchlist');
+      if (!title) {
+        throw new Error('Movie title is required');
+      }
+
+      console.log(
+        `📝 Adding to watchlist: "${title}" (${year || 'unknown year'})`,
+      );
+
+      await this.moviesRepository.addToWatchList({
+        title,
+        year,
+        plot,
+      });
+
+      console.log('✅ Successfully added to watchlist');
+      return { message: `Successfully added "${title}" to your watchlist!` };
+    } catch (error) {
+      console.error('❌ Failed to add to watchlist:', error.message);
+      throw new BadGatewayException(
+        `Failed to add "${title}" to watchlist: ${error.message}`,
+      );
     }
   }
 }

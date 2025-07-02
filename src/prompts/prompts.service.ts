@@ -1,19 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { PromptsRepository } from './repositories/prompts.repository';
+import { CreatePromptDto } from './dto/create-prompt.dto';
 
 @Injectable()
 export class PromptsService {
   constructor(private readonly promptsRepository: PromptsRepository) {}
 
-  async analyzePrompt(prompt: string) {
+  async analyzePrompt(createPromptDto: CreatePromptDto) {
+    console.log('userprompt', createPromptDto.prompt);
+
     const promptTemplate = `
     User will send prompt,
     I want you to generate this prompt as a best practise into better and more readable prompt for LLM
 
     Generate **ONLY** imporved version of prompt
 
-    Prompt: "${prompt}"
+    Prompt: "${createPromptDto.prompt}"
     `.trim();
 
     const response = await axios.post(
@@ -36,10 +39,13 @@ export class PromptsService {
     );
 
     try {
-      const prompt = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      console.log(typeof prompt);
+      const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      return this.promptsRepository.createPrompt(prompt);
+      const improvedPromptDto: CreatePromptDto = {
+        prompt: text,
+      };
+
+      return this.promptsRepository.createPrompt(improvedPromptDto);
     } catch (error) {
       throw new Error(`Failed to parse Gemini response: ${error.message}`);
     }
