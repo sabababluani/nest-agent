@@ -5,7 +5,6 @@ import { FilesystemModule } from './filesystem/filesystem.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MoviesModule } from './movies/movies.module';
 import { PromptsModule } from './prompts/prompts.module';
-import { TestsModule } from './tests/tests.module';
 
 @Module({
   imports: [
@@ -22,7 +21,6 @@ import { TestsModule } from './tests/tests.module';
     }),
     MoviesModule,
     PromptsModule,
-    TestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

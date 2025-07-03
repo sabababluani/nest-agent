@@ -8,10 +8,9 @@ export class PromptsService {
   constructor(private readonly promptsRepository: PromptsRepository) {}
 
   async analyzePrompt(createPromptDto: CreatePromptDto) {
-    console.log('userprompt', createPromptDto.prompt);
-
     const promptTemplate = `
     User will send prompt,
+
     I want you to generate this prompt as a best practise into better and more readable prompt for LLM
 
     Generate **ONLY** imporved version of prompt
