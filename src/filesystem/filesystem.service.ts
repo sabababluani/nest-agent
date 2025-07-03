@@ -9,6 +9,7 @@ import { promisify } from 'util';
 import { Action } from './enums/action.enum';
 import { FileSystemRepository } from './repositories/filesystem.repository';
 import * as dotenv from 'dotenv';
+import { Request } from './interfaces/request.interface';
 
 const execAsync = promisify(exec);
 dotenv.config();
@@ -17,7 +18,7 @@ dotenv.config();
 export class FilesystemService {
   constructor(private readonly fileSystemRepository: FileSystemRepository) {}
 
-  async handleCall(request: any, prompt: string) {
+  async handleCall(request: Request, prompt: string) {
     console.log(
       'handleCall received request:',
       JSON.stringify(request, null, 2),
@@ -51,7 +52,7 @@ export class FilesystemService {
             const absolutePath = path.resolve(file_path);
             const content = await fs.readFile(absolutePath, 'utf-8');
 
-            this.fileSystemRepository.createFilesystem({
+            await this.fileSystemRepository.createFilesystem({
               name: prompt,
               path: file_path,
               action: Action.READ,
@@ -61,7 +62,7 @@ export class FilesystemService {
               success: true,
               message: `content: ${content}`,
             };
-          } catch (error) {
+          } catch (error: any) {
             return {
               success: false,
               message: `Error reading file: ${error.message}`,
@@ -87,7 +88,7 @@ export class FilesystemService {
             await fs.mkdir(path.dirname(absolutePath), { recursive: true });
             await fs.writeFile(absolutePath, text, 'utf-8');
 
-            this.fileSystemRepository.createFilesystem({
+            await this.fileSystemRepository.createFilesystem({
               name: prompt,
               path: file_path,
               action: Action.WRITE,
@@ -97,7 +98,7 @@ export class FilesystemService {
               success: true,
               message: `Successfully wrote to file: ${file_path}`,
             };
-          } catch (error) {
+          } catch (error: any) {
             return {
               success: false,
               message: `Error writing to file: ${error.message}`,
@@ -123,11 +124,11 @@ export class FilesystemService {
               windowsPathsNoEscape: true,
             });
 
-            const fileList = files.map((file) =>
+            const fileList = files.map((file: any) =>
               path.relative(absolutePath, path.join(absolutePath, file)),
             );
 
-            this.fileSystemRepository.createFilesystem({
+            await this.fileSystemRepository.createFilesystem({
               name: prompt,
               path: directory,
               action: Action.LIST,
@@ -138,7 +139,7 @@ export class FilesystemService {
               message: `Files: ${fileList.join(', ')}`,
               files: files,
             };
-          } catch (error) {
+          } catch (error: any) {
             return {
               success: false,
               message: `Error listing files: ${error.message}`,
@@ -162,7 +163,7 @@ export class FilesystemService {
 
             const fileList = files;
 
-            this.fileSystemRepository.createFilesystem({
+            await this.fileSystemRepository.createFilesystem({
               name: prompt,
               path: directory,
               action: Action.SEARCH,
@@ -173,7 +174,7 @@ export class FilesystemService {
               message: `Found ${files.length} files matching "${query}" in ${directory}`,
               files: fileList,
             };
-          } catch (error) {
+          } catch (error: any) {
             return {
               success: false,
               message: `Error searching files: ${error.message}`,
@@ -187,7 +188,7 @@ export class FilesystemService {
 
             await fs.mkdir(path.resolve(dirPath));
 
-            this.fileSystemRepository.createFilesystem({
+            await this.fileSystemRepository.createFilesystem({
               name: prompt,
               path: dirPath,
               action: Action.CREATE,
@@ -197,7 +198,7 @@ export class FilesystemService {
               success: true,
               message: `Successfully created directory: ${dirPath}`,
             };
-          } catch (error) {
+          } catch (error: any) {
             return {
               success: false,
               message: `Error creating directory: ${error.message}`,
@@ -235,7 +236,7 @@ export class FilesystemService {
               };
             }
 
-            this.fileSystemRepository.createFilesystem({
+            await this.fileSystemRepository.createFilesystem({
               name: prompt,
               action: Action.WIFI,
             });
@@ -245,7 +246,7 @@ export class FilesystemService {
               message: `Network information for ${wifi_name} ${passwordMatch![1].trim()}`,
               info: stdout,
             };
-          } catch (error) {
+          } catch (error: any) {
             return {
               success: false,
               message: `Error retrieving WiFi information: ${error.message}`,
@@ -317,7 +318,7 @@ export class FilesystemService {
       let args;
       try {
         args = JSON.parse(argsMatch[1]);
-      } catch (e) {
+      } catch (e: any) {
         throw new Error('Failed to parse arguments JSON from LLM response');
       }
 
@@ -336,7 +337,7 @@ export class FilesystemService {
         prompt,
       );
       return result;
-    } catch (error) {
+    } catch (error: any) {
       return error instanceof Error
         ? error.message
         : 'Unknown error occurred while processing prompt';

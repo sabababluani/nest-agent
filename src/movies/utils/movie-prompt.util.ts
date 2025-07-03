@@ -7,4 +7,4 @@ You can help users with the following tasks:
 - Add movies to their watch history
 - Add movies to their reviews
 - Add movies to their ratings
-`
+`;

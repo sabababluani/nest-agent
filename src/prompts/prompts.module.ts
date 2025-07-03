@@ -10,4 +10,4 @@ import { PromptsRepository } from './repositories/prompts.repository';
   controllers: [PromptsController],
   providers: [PromptsService, PromptsRepository],
 })
-export class PromptsModule { }
+export class PromptsModule {}
