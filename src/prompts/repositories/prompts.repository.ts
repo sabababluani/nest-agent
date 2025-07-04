@@ -15,8 +15,6 @@ export class PromptsRepository {
 
     newPrompt.prompt = createPromptDto.prompt;
 
-    console.log(newPrompt);
-
     return await this.promptRepository.save(newPrompt);
   }
 }
