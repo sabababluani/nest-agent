@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { MoviesRepository } from 'src/movies/repositories/movies.repository';
 import axios from 'axios';
 
+interface Movie {
+  title: string;
+  plot: string;
+  year: number;
+}
+
 @Injectable()
 export class VectorSearchService {
   constructor(private readonly moviesRepository: MoviesRepository) { }
