@@ -1,4 +1,4 @@
-# 🎬 Nest.js Movie Assistant with LLM Integration
+# 🎬 Nest.js Assistant with LLM Integration
 
 A Nest.js backend that uses LLMs to generate movie prompts, search movies, manage a watchlist, and organize data with filesystem control.
 
