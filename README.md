@@ -1,13 +1,32 @@
-# 📂 FilesystemService - AI-Driven File System Agent (NestJS)
+# 🎬 Nest.js Movie Assistant with LLM Integration
 
-This `FilesystemService` class is a smart, NestJS-based file system manager that interprets natural language prompts and maps them to actual file system operations using the Gemini API. It includes support for reading, writing, listing, searching files, creating directories, and fetching Wi-Fi passwords (on Windows), while logging each action to a repository.
+A Nest.js backend that uses LLMs to generate movie prompts, search movies, manage a watchlist, and organize data with filesystem control.
 
----
+## 🚀 Features
 
-## 🧠 Key Features
+- 🤖 **LLM-Powered Prompt Generation** – Generate creative movie prompts based on user input.
+- 🔎 **Movie Search** – Search for movie information using external APIs.
+- ⭐ **Watchlist Management** – Add or remove movies from a personal watchlist.
+- 📂 **Filesystem Integration** – Store and manage data directly in the local file system.
+- 🧱 **Modular Nest.js Structure** – Scalable, maintainable architecture following Nest.js best practices.
 
-- Natural language prompt parsing with Google Gemini API
-- File operations: read, write, list, search, create directory
-- Wi-Fi password retrieval (Windows only)
-- Operation logging via `FileSystemRepository`
-- Robust input validation and error handling
+## 🛠️ Tech Stack
+
+- [Nest.js](https://nestjs.com/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [OpenAI / LLM API](https://platform.openai.com/)
+- [Axios](https://axios-http.com/) – for external API calls
+- [Node.js](https://nodejs.org/)
+
+## 📦 Installation
+
+```bash
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
+npm install
+```
+
+▶️ Usage
+```bash
+npm run start
+```
