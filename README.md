@@ -26,7 +26,7 @@ cd your-repo-name
 npm install
 ```
 
-▶️ Usage
+Usage
 ```bash
 npm run start
 ```
