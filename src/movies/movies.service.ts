@@ -75,12 +75,8 @@ export class MoviesService {
         return { message: text, toolUsed: false };
       }
 
-<<<<<<< HEAD
-      const results: any = [];
-=======
       // Execute tools sequentially
       const results: any[] = [];
->>>>>>> a66f1a3e45cb63ee0d3d311c3ba565598b3ce316
       let movieData: any = null;
 
       for (const toolCall of toolCalls) {
