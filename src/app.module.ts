@@ -5,10 +5,13 @@ import { FilesystemModule } from './filesystem/filesystem.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MoviesModule } from './movies/movies.module';
 import { PromptsModule } from './prompts/prompts.module';
-import { TestsModule } from './tests/tests.module';
+import { VectorSearchModule } from './vector-search/vector-search.module';
+import { ConfigModule } from '@nestjs/config';
+import { TsModule } from './ts/ts.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     FilesystemModule,
     TypeOrmModule.forRoot({
       type: 'mysql',
@@ -22,9 +25,10 @@ import { TestsModule } from './tests/tests.module';
     }),
     MoviesModule,
     PromptsModule,
-    TestsModule,
+    VectorSearchModule,
+    TsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

@@ -53,7 +53,7 @@ export class MoviesService {
         (prompt.toLowerCase().includes('add') ||
           prompt.toLowerCase().includes('watchlist'));
 
-      let toolCalls = this.parseToolCalls(text);
+      const toolCalls = this.parseToolCalls(text);
       console.log('Initial parsed tool calls:', toolCalls);
 
       if (
@@ -75,7 +75,12 @@ export class MoviesService {
         return { message: text, toolUsed: false };
       }
 
+<<<<<<< HEAD
       const results: any = [];
+=======
+      // Execute tools sequentially
+      const results: any[] = [];
+>>>>>>> a66f1a3e45cb63ee0d3d311c3ba565598b3ce316
       let movieData: any = null;
 
       for (const toolCall of toolCalls) {
@@ -121,7 +126,7 @@ export class MoviesService {
             `Tool ${toolCall.tool} executed successfully:`,
             toolResult,
           );
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error executing tool ${toolCall.tool}:`, error);
           results.push({
             toolCall,
@@ -132,7 +137,7 @@ export class MoviesService {
       }
 
       const combinedMessage = results
-        .map((r) => r.formattedResponse)
+        .map((r: any) => r.formattedResponse)
         .join('\n\n');
 
       return {
@@ -141,7 +146,7 @@ export class MoviesService {
         toolCalls: toolCalls,
         toolResults: results,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in analyzePrompt:', error);
       throw new Error(`Failed to analyze prompt: ${error.message}`);
     }
@@ -281,7 +286,7 @@ export class MoviesService {
 
       console.log('✅ Movie found:', result.title, result.year);
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Movie search failed:', error.message);
       throw error;
     }
@@ -305,7 +310,7 @@ export class MoviesService {
 
       console.log('✅ Successfully added to watchlist');
       return { message: `Successfully added "${title}" to your watchlist!` };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to add to watchlist:', error.message);
       throw new BadGatewayException(
         `Failed to add "${title}" to watchlist: ${error.message}`,
