@@ -16,7 +16,7 @@ dotenv.config();
 
 @Injectable()
 export class FilesystemService {
-  constructor(private readonly fileSystemRepository: FileSystemRepository) {}
+  constructor(private readonly fileSystemRepository: FileSystemRepository) { }
 
   async handleCall(request: Request, prompt: string) {
     console.log(
@@ -29,8 +29,6 @@ export class FilesystemService {
     }
 
     const { name, arguments: args } = request.params;
-    console.log('Extracted name:', name);
-    console.log('Extracted args:', args);
 
     if (!name) {
       throw new Error('Invalid request format: missing name in params');
@@ -174,7 +172,7 @@ export class FilesystemService {
               message: `Found ${files.length} files matching "${query}" in ${directory}`,
               files: fileList,
             };
-          } catch (error: any) {
+          } catch (error) {
             return {
               success: false,
               message: `Error searching files: ${error.message}`,
@@ -198,7 +196,7 @@ export class FilesystemService {
               success: true,
               message: `Successfully created directory: ${dirPath}`,
             };
-          } catch (error: any) {
+          } catch (error) {
             return {
               success: false,
               message: `Error creating directory: ${error.message}`,
@@ -246,7 +244,7 @@ export class FilesystemService {
               message: `Network information for ${wifi_name} ${passwordMatch![1].trim()}`,
               info: stdout,
             };
-          } catch (error: any) {
+          } catch (error) {
             return {
               success: false,
               message: `Error retrieving WiFi information: ${error.message}`,
@@ -318,7 +316,7 @@ export class FilesystemService {
       let args;
       try {
         args = JSON.parse(argsMatch[1]);
-      } catch (e: any) {
+      } catch (error) {
         throw new Error('Failed to parse arguments JSON from LLM response');
       }
 
