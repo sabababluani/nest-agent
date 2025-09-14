@@ -7,7 +7,6 @@ import { MoviesModule } from './movies/movies.module';
 import { PromptsModule } from './prompts/prompts.module';
 import { VectorSearchModule } from './vector-search/vector-search.module';
 import { ConfigModule } from '@nestjs/config';
-import { TsModule } from './ts/ts.module';
 
 @Module({
   imports: [
@@ -25,8 +24,7 @@ import { TsModule } from './ts/ts.module';
     }),
     MoviesModule,
     PromptsModule,
-    VectorSearchModule,
-    TsModule,
+    VectorSearchModule
   ],
   controllers: [AppController],
   providers: [AppService],
