@@ -7,7 +7,7 @@ import { ToolCall } from './interfaces/tool-call.interface';
 
 @Injectable()
 export class MoviesService {
-  constructor(private readonly moviesRepository: MoviesRepository) {}
+  constructor(private readonly moviesRepository: MoviesRepository) { }
 
   async analyzePrompt(prompt: string) {
     try {
@@ -17,7 +17,6 @@ export class MoviesService {
         throw new Error('GEMINI_API_KEY environment variable is not set');
       }
 
-      // Simplified prompt - more direct instructions
       const promptTemplate = `${MOVIE_PROMPT}
 
         Available tools: ${JSON.stringify(MOVIE_TOOLS, null, 2)}
@@ -49,7 +48,6 @@ export class MoviesService {
 
       if (!text) throw new Error('No response from Gemini API');
 
-      // Check if this is a search + add to watchlist request
       const isSearchAndAdd =
         prompt.toLowerCase().includes('search') &&
         (prompt.toLowerCase().includes('add') ||
@@ -58,7 +56,6 @@ export class MoviesService {
       const toolCalls = this.parseToolCalls(text);
       console.log('Initial parsed tool calls:', toolCalls);
 
-      // If it's a search+add request but we only got search, force add the watchlist tool
       if (
         isSearchAndAdd &&
         toolCalls.length === 1 &&
@@ -78,7 +75,6 @@ export class MoviesService {
         return { message: text, toolUsed: false };
       }
 
-      // Execute tools sequentially
       const results: any[] = [];
       let movieData: any = null;
 
@@ -98,9 +94,8 @@ export class MoviesService {
               toolCall.args.title,
               toolCall.args.year,
             );
-            movieData = toolResult; // Store for potential watchlist addition
+            movieData = toolResult;
           } else if (toolCall.tool === 'add_to_watchlist') {
-            // Use movie data from search if available
             const title = toolCall.args.title || movieData?.title;
             const year = toolCall.args.year || movieData?.year;
             const plot = toolCall.args.plot || movieData?.plot;
@@ -156,7 +151,6 @@ export class MoviesService {
     const toolCalls: ToolCall[] = [];
     console.log('Parsing tool calls from text:', text);
 
-    // Look for TOOL_CALL_START...TOOL_CALL_END blocks
     const toolCallBlocks = text.match(
       /TOOL_CALL_START([\s\S]*?)TOOL_CALL_END/g,
     );
@@ -169,7 +163,6 @@ export class MoviesService {
         }
       }
     } else {
-      // Fallback to old parsing method
       const sections = text.includes('---') ? text.split('---') : [text];
       for (const section of sections) {
         const toolCall = this.parseSingleToolCall(section.trim());
@@ -201,7 +194,6 @@ export class MoviesService {
           args = JSON.parse(argsText);
         } catch (parseError) {
           console.error('Failed to parse args JSON:', parseError);
-          // Try to extract at least the title if JSON parsing fails
           const titleMatch = text.match(/"title":\s*"([^"]+)"/i);
           if (titleMatch) {
             args = { title: titleMatch[1] };
@@ -265,7 +257,7 @@ export class MoviesService {
       }
 
       const response = await axios.get(`https://www.omdbapi.com/?${params}`, {
-        timeout: 10000, // 10 second timeout
+        timeout: 10000,
       });
 
       if (response.data.Response === 'False') {
