@@ -121,7 +121,7 @@ export class MoviesService {
             `Tool ${toolCall.tool} executed successfully:`,
             toolResult,
           );
-        } catch (error: any) {
+        } catch (error) {
           console.error(`Error executing tool ${toolCall.tool}:`, error);
           results.push({
             toolCall,
@@ -132,7 +132,7 @@ export class MoviesService {
       }
 
       const combinedMessage = results
-        .map((r: any) => r.formattedResponse)
+        .map((r) => r.formattedResponse)
         .join('\n\n');
 
       return {
@@ -141,7 +141,7 @@ export class MoviesService {
         toolCalls: toolCalls,
         toolResults: results,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error in analyzePrompt:', error);
       throw new Error(`Failed to analyze prompt: ${error.message}`);
     }
@@ -280,7 +280,7 @@ export class MoviesService {
 
       console.log('✅ Movie found:', result.title, result.year);
       return result;
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Movie search failed:', error.message);
       throw error;
     }
@@ -302,10 +302,9 @@ export class MoviesService {
         plot,
       });
 
-      console.log('✅ Successfully added to watchlist');
+      console.log('Successfully added to watchlist');
       return { message: `Successfully added "${title}" to your watchlist!` };
-    } catch (error: any) {
-      console.error('❌ Failed to add to watchlist:', error.message);
+    } catch (error) {
       throw new BadGatewayException(
         `Failed to add "${title}" to watchlist: ${error.message}`,
       );
