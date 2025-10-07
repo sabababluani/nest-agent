@@ -75,7 +75,6 @@ export class MoviesService {
         return { message: text, toolUsed: false };
       }
 
-      // Execute tools sequentially
       const results: any[] = [];
       let movieData: any = null;
 
@@ -195,7 +194,6 @@ export class MoviesService {
           args = JSON.parse(argsText);
         } catch (parseError) {
           console.error('Failed to parse args JSON:', parseError);
-          // Try to extract at least the title if JSON parsing fails
           const titleMatch = text.match(/"title":\s*"([^"]+)"/i);
           if (titleMatch) {
             args = { title: titleMatch[1] };
@@ -259,7 +257,7 @@ export class MoviesService {
       }
 
       const response = await axios.get(`https://www.omdbapi.com/?${params}`, {
-        timeout: 10000, // 10 second timeout
+        timeout: 10000,
       });
 
       if (response.data.Response === 'False') {
