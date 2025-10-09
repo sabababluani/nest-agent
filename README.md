@@ -12,6 +12,7 @@ A Nest.js backend that uses LLMs to generate movie prompts, search movies, manag
 
 ## Tech Stack
 
+
 - [Nest.js](https://nestjs.com/)
 - [TypeScript](https://www.typescriptlang.org/)
 - [Gemini / LLM API](https://gemini.google.com/gems/view)
