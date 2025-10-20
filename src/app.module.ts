@@ -7,6 +7,8 @@ import { MoviesModule } from './movies/movies.module';
 import { PromptsModule } from './prompts/prompts.module';
 import { VectorSearchModule } from './vector-search/vector-search.module';
 import { ConfigModule } from '@nestjs/config';
+import { GmailModule } from './gmail/gmail.module';
+import { DiscogsModule } from './discogs/discogs.module';
 
 @Module({
   imports: [
@@ -24,7 +26,9 @@ import { ConfigModule } from '@nestjs/config';
     }),
     MoviesModule,
     PromptsModule,
-    VectorSearchModule
+    VectorSearchModule,
+    GmailModule,
+    DiscogsModule
   ],
   controllers: [AppController],
   providers: [AppService],

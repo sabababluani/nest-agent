@@ -30,11 +30,16 @@
     "axios": "^1.9.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "disconnect": "^1.2.2",
     "dotenv": "^16.5.0",
     "glob": "^11.0.3",
+    "install": "^0.13.0",
     "mysql2": "^3.14.1",
+    "nodemailer": "^7.0.9",
+    "npm": "^11.6.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "telegraf": "^4.16.3",
     "typeorm": "^0.3.24"
   },
   "devDependencies": {
